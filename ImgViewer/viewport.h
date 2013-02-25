@@ -17,13 +17,9 @@ namespace XMeshLib {
 	class Edge;
 }
 
-class KeyHandle;
-class MouseHandle;
-
 typedef std::map<int, XMeshLib::Vertex*> VerMap;
 typedef std::vector<XMeshLib::Edge*> Edges;
 typedef std::vector< std::vector < std::vector <RGBApixel> > > RGBCube;
-
 class ViewPort : public QGLWidget
 {
 	Q_OBJECT
@@ -40,36 +36,31 @@ public:
 		void snapshot();
 		void blackcolor();
 		void whitecolor();
-		void click(int x, int y);
-		void slotUpdateSlice(double percent);
-signals:
-		void ctrlPress(bool b);
 protected:
 	void initializeGL ();
-	void initTexture();
 	void resizeGL ( int width , int height );
 	void paintGL ();
 
- 	void mousePressEvent(QMouseEvent *event);
- 	void mouseMoveEvent(QMouseEvent *event);
- 	void mouseReleaseEvent(QMouseEvent *event);
- 	void wheelEvent( QWheelEvent * event );
+	void mousePressEvent(QMouseEvent *event);
+	void mouseMoveEvent(QMouseEvent *event);
+	void mouseReleaseEvent(QMouseEvent *event);
+	void wheelEvent( QWheelEvent * event );
 
 	//key handles
 	void keyPressEvent ( QKeyEvent * event );
 	void keyReleaseEvent ( QKeyEvent * event );
 
 private:
-// 	void Mousei2f(int x, int y, float *xf, float *yf);
-// 	void Rotate(float ox, float oy, float nx, float ny);
-// 	void Translate(float dx, float dy, float dz);
-// 	void UpdateDist(float dx, float dy, float dz);
+	void Mousei2f(int x, int y, float *xf, float *yf);
+	void Rotate(float ox, float oy, float nx, float ny);
+	void Translate(float dx, float dy, float dz);
+	void UpdateDist(float dx, float dy, float dz);
 	Camera theCamera;
-	double rotate_dist;							// How far the center of the trackball is from the camera
-	double view_dist;							// How far the center of the world is from the camera
+	float rotate_dist;							// How far the center of the trackball is from the camera
+	float view_dist;							// How far the center of the world is from the camera
 
-// 	QPointF lastPos;
-// 	QPointF pressPos;
+	QPointF lastPos;
+	QPointF pressPos;
 
 	void InitCamera();
 	void compute_image_snapshot();
@@ -86,14 +77,9 @@ private:
 	std::vector<SnapShot*> snapshots;
 	
 	void render_snapshot(SnapShot *shot);
-	void renderMesh();
+void renderMesh();
 	bool isCtrl;
-	//texture
-	//GLuint texName;
-	//GLubyte* texture;
-	
 public :
-	
 	RGBCube rgbCube;
 	SliceMesh *slicemesh;
 	SnapShot *currentSnapshot;
@@ -109,13 +95,9 @@ private:
 	void ProcessHits(GLint hits, GLuint buffer[]);
 	int pickingSnapShot;
 	void updateSliceDistFact(double percent);
-
-	MouseHandle *mouseHandle;
-	KeyHandle *keyHandle;
-
 public:
 	double slice_dist_factor;
-	
+
 };
 
 #endif // VIEWPORT_H

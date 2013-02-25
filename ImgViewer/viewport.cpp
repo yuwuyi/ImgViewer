@@ -12,10 +12,6 @@
 #include <QDir>
 #include <iostream>
 
-#include "MouseHandle.h"
-#include "KeyHandle.h"
-//#include "EasyBMP_OpenGL.h"
-
 typedef Vector3f vec3;
 typedef Vector3d vec3d;
 typedef Quatf quat;
@@ -48,11 +44,6 @@ ViewPort::ViewPort(QWidget *parent)
 	//slice_dist_factor = 50.0;
 	slice_dist_factor = 1.0;
 	
-	mouseHandle = new MouseHandle(theCamera, rotate_dist, view_dist);
-
-	connect(this, SIGNAL(ctrlPress(bool)), mouseHandle, SLOT(setCtrl(bool)));
-	connect(mouseHandle, SIGNAL(signalUpdateSlice(double)), this, SLOT(slotUpdateSlice(double)));
-
 }
 
 ViewPort::~ViewPort()
@@ -60,8 +51,6 @@ ViewPort::~ViewPort()
 	for (size_t sid = 0; sid < snapshots.size(); ++sid) {
 		delete snapshots[sid];
 	}
-	
-	
 }
 
 void ViewPort::initializeGL () {
@@ -91,9 +80,6 @@ void ViewPort::resizeGL ( int width , int height ) {
 	GLfloat x = GLfloat(width) / height;
 	glFrustum(-x, +x, -1.0, +1.0, 4.0, 15.0);
 	glMatrixMode(GL_MODELVIEW);
-
-	mouseHandle->slotSetScreenHeight(height);
-	mouseHandle->slotSetScreenWidth(width);
 }
 
 void ViewPort::paintGL () {
@@ -109,22 +95,39 @@ void ViewPort::paintGL () {
 		render_snapshot(snapshots[sid]);
 	}
 
+	glEnable (GL_BLEND);
+	glColor3f(1.0, 0, 0.0);
+	glPointSize(5.0);
+	glLineWidth(5.0);
+	glBegin(GL_LINES);
+	for (size_t eid = 0; eid < gEdges.size(); ++eid) {
+		Edge *edge = gEdges[eid];
+		Vertex *v1 = gVers[edge->vid(0)];
+		Vertex *v2 = gVers[edge->vid(1)];
+		Point pt1 = v1->point();
+		Point pt2 = v2->point();
+
+		if (slicedir == 2 && (pt1[2] > z_threshold || pt2[2] > z_threshold)) {
+			continue;
+		} else if (slicedir !=2 && (pt1[slicedir] > xy_threshold || pt2[slicedir] > xy_threshold)) {
+			continue;
+		}
+
+		glVertex3f(pt1[0], pt1[1], pt1[2]);
+		glVertex3f(pt2[0], pt2[1], pt2[2]);
+	}
+	glEnd();
+	glPointSize(1.0);
+	
 	renderMesh();
 	glPopMatrix();
 }
 
-void ViewPort::click(int x, int y) {
-	//pickingSnapShot(x, y);
-	doPickingSnapShot(x, y);
-}
 
 void ViewPort::renderMesh() {
 	// 	The Mesh;
-	
 	if (isShowFullMesh) {
-		//glColor4f(1.0, 0.3, 0, 0.5);	
-		glColor4f(248.0 / 255, 184.0 /255, 152.0 / 255, 0.5);
-		//glColor3f(248.0 / 255, 184.0 /255, 152.0 / 255);
+		glColor4f(1.0, 0.3, 0, 0.5);
 		glPointSize(1.0);
 		glLineWidth(1.0);
 		glBegin(GL_TRIANGLES);
@@ -143,24 +146,6 @@ void ViewPort::renderMesh() {
 	}
 
 }
-
-void ViewPort::mousePressEvent(QMouseEvent *event) { mouseHandle->mousePressEvent(event); updateGL(); }
-void ViewPort::mouseMoveEvent(QMouseEvent *event) { mouseHandle->mouseMoveEvent(event); updateGL(); }
-void ViewPort::mouseReleaseEvent(QMouseEvent *event) { mouseHandle->mouseReleaseEvent(event); updateGL(); }
-void ViewPort::wheelEvent( QWheelEvent * event ) { mouseHandle->wheelEvent(event); updateGL(); }
-
-void ViewPort::slotUpdateSlice(double percent) {
-	slice_dist_factor *= percent;
-	if (slice_dist_factor > 4) {
-		slice_dist_factor = 4;
-	}
-	if (slice_dist_factor < 1.0) {
-		slice_dist_factor = 1.0;
-	}
-
-	updateSliceDistFact(percent);
-}
-
 //Camera
 void ViewPort::InitCamera()
 {
@@ -180,86 +165,73 @@ void ViewPort::InitCamera()
 	theCamera.GoHome();
 }
 
-void ViewPort::initTexture() {
-// 	glGenTextures(N_IMAGE_Z, z_texture);
-// 	for (int i=0;i<N_IMAGE_Z;i++)
-// 	{
-// 		glBindTexture(GL_TEXTURE_2D, z_texture[i]);
-// 		glTexImage2D(GL_TEXTURE_2D,0,3,imageWidth,imageHeight,0,GL_RGB,GL_UNSIGNED_BYTE, (uchar*)vec_img_z[i]->imageData);
-// 		glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-// 		glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
-// 		glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-// 		glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-// 		glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-// 	}
-}
-// void ViewPort::Mousei2f(int x, int y, float *xf, float *yf)
-// {
-// 	int screenwidth = width();
-// 	int screenheight = height();
-// 
-// 	float r = (float)screenwidth/screenheight;
-// 	if (r > 1.0) {
-// 		*xf = r * (2.0f * x / screenwidth - 1.0f);
-// 		*yf = 1.0f - 2.0f * y / screenheight;
-// 	} else {
-// 		*xf = 2.0f * x / screenwidth - 1.0f;
-// 		*yf = (1.0f - 2.0f * y / screenheight) / r;
-// 	}
-// }
-// 
-// 
+void ViewPort::Mousei2f(int x, int y, float *xf, float *yf)
+{
+	int screenwidth = width();
+	int screenheight = height();
 
-// void ViewPort::mousePressEvent(QMouseEvent *event)
-// {
-// 	pressPos = event->pos();
-// 	float nx, ny;
-// 	Mousei2f(event->pos().x(), event->pos().y(), &nx, &ny);
-// 	bool isClick = false;
-// 
-// 	isClick = (QPointF(nx, ny) - lastPos).manhattanLength() < 0.01;
-// 
-// 	lastPos = QPointF(nx, ny);
-// 
-// 	updateGL();
-// 
-// 
-// 
-// 	
-// 
-// }
-// 
-// void ViewPort::mouseReleaseEvent(QMouseEvent *event) {
-// 	bool isClick = false;
-// 	isClick = (event->pos() - pressPos).manhattanLength() < 5;
-// 	updateGL();
-// 
-// 	if (isClick ) {
-// 		doPickingSnapShot(event->pos().x(), event->pos().y());
-// 	}
-// }
-// 
-// 
-// void ViewPort::mouseMoveEvent(QMouseEvent *event)
-// {
-// 	float cur_mouse_x, cur_mouse_y;
-// 	float delta_x, delta_y;
-// 
-// 
-// 	Mousei2f(event->pos().x(), event->pos().y(), &cur_mouse_x, &cur_mouse_y);
-// 
-// 	delta_x = cur_mouse_x - lastPos.x();
-// 	delta_y = cur_mouse_y - lastPos.y();
-// 
-// 	if (event->buttons() & Qt::LeftButton) {
-// 		Rotate(lastPos.x(), lastPos.y(), cur_mouse_x, cur_mouse_y);
-// 	} else if (event->buttons() & Qt::RightButton) {
-// 		Translate(delta_x, delta_y, 0);
-// 	}
-// 	
-// 	lastPos = QPointF(cur_mouse_x, cur_mouse_y);
-// 	updateGL();
-// }    
+	float r = (float)screenwidth/screenheight;
+	if (r > 1.0) {
+		*xf = r * (2.0f * x / screenwidth - 1.0f);
+		*yf = 1.0f - 2.0f * y / screenheight;
+	} else {
+		*xf = 2.0f * x / screenwidth - 1.0f;
+		*yf = (1.0f - 2.0f * y / screenheight) / r;
+	}
+}
+
+
+
+void ViewPort::mousePressEvent(QMouseEvent *event)
+{
+	pressPos = event->pos();
+	float nx, ny;
+	Mousei2f(event->pos().x(), event->pos().y(), &nx, &ny);
+	bool isClick = false;
+
+	isClick = (QPointF(nx, ny) - lastPos).manhattanLength() < 0.01;
+
+	lastPos = QPointF(nx, ny);
+
+	updateGL();
+
+
+
+	
+
+}
+
+void ViewPort::mouseReleaseEvent(QMouseEvent *event) {
+	bool isClick = false;
+	isClick = (event->pos() - pressPos).manhattanLength() < 5;
+	updateGL();
+
+	if (isClick ) {
+		doPickingSnapShot(event->pos().x(), event->pos().y());
+	}
+}
+
+
+void ViewPort::mouseMoveEvent(QMouseEvent *event)
+{
+	float cur_mouse_x, cur_mouse_y;
+	float delta_x, delta_y;
+
+
+	Mousei2f(event->pos().x(), event->pos().y(), &cur_mouse_x, &cur_mouse_y);
+
+	delta_x = cur_mouse_x - lastPos.x();
+	delta_y = cur_mouse_y - lastPos.y();
+
+	if (event->buttons() & Qt::LeftButton) {
+		Rotate(lastPos.x(), lastPos.y(), cur_mouse_x, cur_mouse_y);
+	} else if (event->buttons() & Qt::RightButton) {
+		Translate(delta_x, delta_y, 0);
+	}
+	
+	lastPos = QPointF(cur_mouse_x, cur_mouse_y);
+	updateGL();
+}    
 void ViewPort::updateSliceDistFact(double percent) {
 	for (size_t sid = 0; sid < snapshots.size(); ++sid) {
 		SnapShot *ss = snapshots[sid];
@@ -279,39 +251,38 @@ void ViewPort::updateSliceDistFact(double percent) {
 }
 
 
-// void ViewPort::wheelEvent( QWheelEvent * event )  {
-//  	if (isCtrl) {
-//  		//control press, adjust the slice_distance_factor
-//  		double percent = 1 + (GLfloat)event->delta() / 720 ;
-// 	
-// 		if (percent < 0.1) {
-//  			percent = 0.1;
-//  		}
-// 
-// 		if (percent > 2.0) {
-// 			percent = 2.0;
-// 		}
-// 		
-// 		slice_dist_factor *= percent;
-// 		if (slice_dist_factor > 4) {
-// 			slice_dist_factor = 4;
-// 		}
-// 		if (slice_dist_factor < 1.0) {
-// 			slice_dist_factor = 1.0;
-// 		}
-// 		
-//  		updateSliceDistFact(percent);
-//  
-//  	} else {
-// 		Translate(0, 0, ((GLfloat)event->delta()) / 360);
-// 	}
-// 	updateGL();
-// }
+void ViewPort::wheelEvent( QWheelEvent * event )  {
+ 	if (isCtrl) {
+ 		//control press, adjust the slice_distance_factor
+ 		double percent = 1 + (GLfloat)event->delta() / 720 ;
+	
+		if (percent < 0.1) {
+ 			percent = 0.1;
+ 		}
+
+		if (percent > 2.0) {
+			percent = 2.0;
+		}
+		
+		slice_dist_factor *= percent;
+		if (slice_dist_factor > 4) {
+			slice_dist_factor = 4;
+		}
+		if (slice_dist_factor < 1.0) {
+			slice_dist_factor = 1.0;
+		}
+		
+ 		updateSliceDistFact(percent);
+ 
+ 	} else {
+		Translate(0, 0, ((GLfloat)event->delta()) / 360);
+	}
+	updateGL();
+}
 
 void ViewPort::keyPressEvent ( QKeyEvent * event ) {
 	if (event->modifiers() & Qt::ControlModifier) {
 		isCtrl = true;
-		emit(ctrlPress(true));
 	}
 	std::cout << isCtrl << "\n";
 
@@ -344,53 +315,52 @@ void ViewPort::keyPressEvent ( QKeyEvent * event ) {
 void ViewPort::keyReleaseEvent ( QKeyEvent * event ) {
 	//if (event->modifiers() & Qt::ControlModifier) {
 		isCtrl = false;
-		emit(ctrlPress(false));
 	//}
 	std::cout << isCtrl << "\n";
 }
 
 
 
-// void ViewPort::Rotate(float ox, float oy, float nx, float ny)
-// {
-// 	quat q;
-// 	Camera::Arc2Quaternion(ox, oy, nx, ny, q);
-// 
-// 	if (rotate_dist == 0) {
-// 		q[1] = -q[1];
-// 		q[2] = -q[2];
-// 	}
-// 
-// 	theCamera.Rotate(q, rotate_dist);
-// }
-// 
-// void ViewPort::Translate(float dx, float dy, float dz)
-// {
-// 	// some auto param ajustment to be refined later
-// 	float scalefactor = 0.5f*view_dist;
-// 	dx *= scalefactor*theCamera.fov;
-// 	dy *= scalefactor*theCamera.fov;
-// 	dz = view_dist * (exp(-0.5f * dz) - 1.0f);
-// 
-// 	// moving the camera in the opposite direction to
-// 	// the direction we want the object to move
-// 	theCamera.Move(-dx, -dy, -dz);
-// 	UpdateDist(-dx, -dy, -dz);
-// }
-// 
-// // Mouse event helper function - update distance
-// void ViewPort::UpdateDist(float dx, float dy, float dz)
-// {
-// 	vec3 viewdir(0, 0, -view_dist);
-// 	vec3 delta(-dx, -dy, -dz);
-// 
-// 	vec3 newviewdir = viewdir + delta;
-// 
-// 	view_dist = -newviewdir.z;
-// 	// Always rotate around the center of the object
-// 	// which is assumed to be place at the origin of the world coordinate
-// 	rotate_dist = view_dist;
-// }
+void ViewPort::Rotate(float ox, float oy, float nx, float ny)
+{
+	quat q;
+	Camera::Arc2Quaternion(ox, oy, nx, ny, q);
+
+	if (rotate_dist == 0) {
+		q[1] = -q[1];
+		q[2] = -q[2];
+	}
+
+	theCamera.Rotate(q, rotate_dist);
+}
+
+void ViewPort::Translate(float dx, float dy, float dz)
+{
+	// some auto param ajustment to be refined later
+	float scalefactor = 0.5f*view_dist;
+	dx *= scalefactor*theCamera.fov;
+	dy *= scalefactor*theCamera.fov;
+	dz = view_dist * (exp(-0.5f * dz) - 1.0f);
+
+	// moving the camera in the opposite direction to
+	// the direction we want the object to move
+	theCamera.Move(-dx, -dy, -dz);
+	UpdateDist(-dx, -dy, -dz);
+}
+
+// Mouse event helper function - update distance
+void ViewPort::UpdateDist(float dx, float dy, float dz)
+{
+	vec3 viewdir(0, 0, -view_dist);
+	vec3 delta(-dx, -dy, -dz);
+
+	vec3 newviewdir = viewdir + delta;
+
+	view_dist = -newviewdir.z;
+	// Always rotate around the center of the object
+	// which is assumed to be place at the origin of the world coordinate
+	rotate_dist = view_dist;
+}
 
 void ViewPort::loadImages(const QString & dirName) {
 	QDir dir(dirName);
@@ -412,33 +382,16 @@ void ViewPort::loadImages(const QString & dirName) {
 		size_t height_dim = input.TellHeight();
 		size_t width_dim  = input.TellWidth();
 
-//  		if (!texture) {
-//  			//texture = new GLubyte [width_dim * height_dim * 3];
-//  			texture = BMPtoTexture(input);
-//  		}
-
- 		if (!currentSnapshot->texture) {
- 			currentSnapshot->texture = new GLubyte [height_dim * width_dim * 3];
- 		}
-
 		rgbCube[slotid].resize(height_dim);
-
 		for (size_t i = 0; i < height_dim; ++i) {
 			rgbCube[slotid][i].resize(width_dim);
 		}
-		
+
 		for (size_t i = 0; i < height_dim; ++i) {
 			for (size_t j = 0; j < width_dim; ++j) {
 				rgbCube[slotid][i][j] = *input(i, j);
 			}
 		}
-
-
-		//initial the texture
-
-
-
-
 		++slotid;
 	}
 	std::cout << rgbCube.size() << "\n";
@@ -535,9 +488,9 @@ void ViewPort::add_mesh_contour() {
 
 void ViewPort::render_snapshot(SnapShot *shot) {
 
-//  	if (shot->pts.empty() && shot->quads.empty()) {
-//  		return;
-//  	}
+	if (shot->pts.empty() && shot->quads.empty()) {
+		return;
+	}
 	glDisable(GL_LIGHTING);
 	glPointSize(2.0);
 	
@@ -552,22 +505,6 @@ void ViewPort::render_snapshot(SnapShot *shot) {
 	glLoadName(shot->id + 1);
 
 	
-	//if (shot)
-	glEnable(GL_TEXTURE_2D);
-	glShadeModel(GL_FLAT);
-	if (shot->slice_dir == 2) {
-		double zvv = (float)(shot->slice_part) * 1.0 / rgbCube.size() * slice_dist_factor - 0.001;
-
-		glBindTexture(GL_TEXTURE_2D, currentSnapshot->texName);
-		glBegin(GL_QUADS);
-		glTexCoord2f(0.0,0.0); glVertex3f(-0.5,-0.5,zvv);
-		glTexCoord2f(0.0,1.0); glVertex3f(-0.5, 0.5, zvv);
-		glTexCoord2f(1.0,1.0); glVertex3f(0.5,0.5,zvv);
-		glTexCoord2f(1.0,0.0); glVertex3f(0.5, -0.5,zvv);
-		glEnd();
-		glFlush();
-	}
-	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_POINTS);
 	for (size_t sid = 0; sid < shot->pts.size(); ++sid) {
 		Point pt = shot->pts[sid];
@@ -643,7 +580,6 @@ void ViewPort::render_snapshot(SnapShot *shot) {
 
 
 	//the yellow boundary
-	if (1) {
 	if (shot == currentSnapshot) {
 		glColor3f(1.0, 1.0, 0);
 	} else {
@@ -694,7 +630,7 @@ void ViewPort::render_snapshot(SnapShot *shot) {
 
 		glEnd();
 
-	}
+
 }
 
 void ViewPort::compute_image_snapshot() {
@@ -705,11 +641,8 @@ void ViewPort::compute_image_snapshot() {
 
 	if (slicedir == 2) {
 
-		int using_pts_drawing = 2;
-		//0: using point
-		//1: using quads
-		//2: using texture
-		if (using_pts_drawing == 0) {
+		bool using_pts_drawing = false;
+		if (using_pts_drawing) {
 			size_t height_dim = rgbCube[slicepart].size();
 			size_t width_dim  = rgbCube[slicepart][0].size();
 
@@ -720,7 +653,7 @@ void ViewPort::compute_image_snapshot() {
 					currentSnapshot->rgbs.push_back(Point(rgbCube[slicepart][i][j].Red /255.0, rgbCube[slicepart][i][j].Green /255.0, rgbCube[slicepart][i][j].Blue/255.0));
 				}
 			}
-		} else if (using_pts_drawing == 1) {
+		} else {
 
 			size_t height_dim = rgbCube[slicepart].size();
 			size_t width_dim  = rgbCube[slicepart][0].size();
@@ -744,41 +677,9 @@ void ViewPort::compute_image_snapshot() {
 					currentSnapshot->quad_rgbs.push_back(Point(rgbCube[slicepart][i][j + 1].Red /255.0, rgbCube[slicepart][i][j + 1].Green /255.0, rgbCube[slicepart][i][j + 1].Blue/255.0));
 
 				}
-			} 
-		} else if (using_pts_drawing == 2) {
-
-			size_t height_dim = rgbCube[slicepart].size();
-			size_t width_dim  = rgbCube[slicepart][0].size();
-
-			//prepare for texture_map;
-			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
-			glBindTexture(GL_TEXTURE_2D,currentSnapshot->texName);
-
-			{
-				int i,j,k;
-				k=0;
-				for( i=0; i < height_dim ; ++i )
-				{
-					for( j=0 ; j < width_dim ; ++j )
-					{
-						currentSnapshot->texture[k] = (GLubyte) rgbCube[slicepart][j][i].Red;k++;
-						currentSnapshot->texture[k] = (GLubyte) rgbCube[slicepart][j][i].Green;k++;
-						currentSnapshot->texture[k] = (GLubyte) rgbCube[slicepart][j][i].Blue;k++;
-					}
-				}
-
 			}
 
-			glTexImage2D(GL_TEXTURE_2D,0,3,width_dim,height_dim,0,GL_RGB,GL_UNSIGNED_BYTE, currentSnapshot->texture);
-			glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-			glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP);
-			glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-			glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-
-
 		}
-	
 	} else if (slicedir == 1) {
 		size_t height_dim = rgbCube.size();
 		size_t width_dim  = rgbCube[0].size();
@@ -867,18 +768,11 @@ void ViewPort::snapshot() {
 	currentSnapshot = new SnapShot;
 	currentSnapshot->id = snapshots.size();
 	
-
 	currentSnapshot->clear();
 	currentSnapshot->pts.push_back(tmp_pt);
 	currentSnapshot->rgbs.push_back(Point(0, 0, 0));		
 	pickingSnapShot = currentSnapshot->id;
 	snapshots.push_back(currentSnapshot);
-
-	if (snapshots.size() > 1) {
-		currentSnapshot->texture = new GLubyte [512 * 512 * 3];
-	}
-
-
 }
 
 

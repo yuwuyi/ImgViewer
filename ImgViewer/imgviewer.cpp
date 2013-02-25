@@ -152,6 +152,5 @@ void ImgViewer::LoadMesh() {
 		
 		vertex->point() -= Point(0.5, 0.5, 0);
 		std::swap(vertex->point()[0], vertex->point()[1]);
-		vertex->point()[1] = -vertex->point()[1];
 	}
 }
