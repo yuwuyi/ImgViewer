@@ -1,91 +1,158 @@
-#ifndef _MESH_H_
-#define _MESH_H_
+#ifndef _XMESHLIB_CORE_MESH_H_
+#define _XMESHLIB_CORE_MESH_H_
 
+#pragma warning (disable : 4786)
 #include "Edge.h"
 #include "Face.h"
-#include "Halfedge.h"
+#include "HalfEdge.h"
 #include "Vertex.h"
 #include "Point.h"
+#include "Trait.h"
+#include "Attributes.h"
 #include <hash_map>
-#include <list>
+//#include <map>
 
-class Mesh
-{
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////								Methods										//////////////////
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-public:
-	//(1) Constructor and Destructor
-	Mesh(){maxVid = maxFid = -1;boundaryLabeled=false;}
-	~Mesh();
+namespace XMeshLib{
 
-	//(2) I/O
-	int numVertices() {return m_verts.size();}						//number of vertices
-	int numEdges() {return m_edges.size();}							//number of edges
-	int numFaces() {return m_faces.size();}							//number of faces
-	void copyTo( Mesh & targetMesh );								//copy current mesh to the target mesh 
-	bool read( const char inFile[]);								//read a mesh from inFile
-	bool write( const char outFile[]);								//write a mesh to outFile
-	void clear();
+	class Vertex;
+	class HalfEdge;
+	class Edge;
+	class Face;
 
-	//(3) BASIC OPERATIONS
-	//Check whether an element is on the boundary:
-	bool isBoundary( Vertex *  v ) const {return v->boundary();}
-	bool isBoundary( Edge *    e ) const {return e->boundary();}
-	bool isBoundary( Halfedge *  he ) const {return !(he->twin());}
-	
-	//indexing elements
-	Edge *				idEdge( int id0, int id1 );
-	Face *				idFace(const int id );		
-	Halfedge *			idHalfedge( int srcVid, int trgVid );
-	Vertex *			idVertex( int id );
-	Edge *				vertexEdge( Vertex * v0, Vertex * v1 );	
+	class Mesh// : public Data
+	{
+	public:
+		typedef Vertex   *	tVertex;
+		typedef HalfEdge *	tHalfEdge;
+		typedef Edge     *	tEdge;
+		typedef Face     *	tFace;
+		typedef Mesh    *	tMesh;
 
-	//(4) Mesh Modification Operators
-	Vertex *	createVertex(int id);										
-	Edge *		createEdge(Halfedge * he0, Halfedge * he1);
-	Face *		createFace(int id);
-	Face *		createFace(int v[], int id);
-	Face *		createFace(Vertex * v[], int id);	
-	void		LabelBoundaries();
+		Mesh()
+		{		
+			aux = false;			
+			maxid = -1;
+			maxfid = -1;
+		}
+		~Mesh();
 
-	////(5) Some Basic Mesh Processing Operations
-	////	Flip the input edge, and return it.
-	////	if the flip works, return the resultant edge, otherwise return NULL
-	//Edge *				EdgeFlip(Edge * e);
+		int numVertices() const;
+		int numEdges() const ;
+		int numFaces() const;
+		
+		void copyTo( Mesh & solid );
+		bool read( const char inFile[]);
+		bool write( const char outFile[]);
 
-	//// Split the given edge(input) into two. 
-	////	  return :  newly created vertex or NULL(when the split fails);
-	//Vertex *			EdgeSplit(Edge * e);
-	//Vertex *			FaceSplit(Face * f, double bary[3]);
+		bool isBoundary( tVertex  v ) const;
+		bool isBoundary( tEdge    e ) const;
+		bool isBoundary( tHalfEdge  he ) const;
+		
+		bool hasNormal() {return normals.valid();}
+		bool hasUV() {return uv.valid();}
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////								Variables										//////////////////
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//check whether the given vertex is on current mesh
+		bool hasVertex(Vertex * ver) 
+		{
+			return (idVertex(ver->id())==ver);
+		}
 
+		bool hasHalfEdge(HalfEdge * he)
+		{
+			return (idVertex(he->vertex()->id())==he->vertex());
+		}
 
-		stdext::hash_map<Vertex *, int>		vertIndex;
-
-protected:
-	std::list<Edge *>				m_edges;		//edge container
-	std::list<Vertex *>				m_verts;		//vertex container
-	std::list<Face *>				m_faces;		//face container
-
-	int maxVid;
-	int maxFid;
-	stdext::hash_map<int, Vertex *>		id2Ver;			//given a vertex id, get its handle in the container
-	stdext::hash_map<int, Face *>		id2Face;		//given a face id, get its handle in the container
-
-	std::vector<std::vector<Halfedge *>> v_adjHeList;
-	bool boundaryLabeled;
-
-protected:
-	friend class MeshVertexIterator;
-	friend class MeshEdgeIterator;
-	friend class MeshFaceIterator;
-	friend class MeshHalfedgeIterator;
-};
+		Point & verNormal(tVertex v){return normals[id2VInd[v->id()]];}
+		Point & verUV(tVertex v);
 
 
+		int				faceId( tFace  f ) const;
+		int				vertexId( tVertex  v ) const;
+		tEdge			idEdge( int id0, int id1 );
+		tEdge			vertexEdge( tVertex v0, tVertex v1 );
+		tFace			edgeFace1( tEdge  e );
+		tFace			edgeFace2( tEdge  e );
+		tFace			halfedgeFace( tHalfEdge he );
+		tFace			idFace(const int id );
+		tHalfEdge		corner( tVertex v, tFace f);
+		tHalfEdge		idHalfedge( int id0, int id1 );
+		tHalfEdge		vertexHalfedge( tVertex v0, tVertex v1 );
+		tVertex			edgeVertex1( tEdge  e );
+		tVertex			edgeVertex2( tEdge  e );
+		tVertex			halfedgeVertex( tHalfEdge he );		
+		tVertex			idVertex( int id );
 
-#endif //_XMESHLIB_CORE_MESH_H_ defined
+		/*
+			Flip the input edge, and return it.
+			if the flip works, return the resultant edge, otherwise return NULL
+		*/
+		tEdge			edgeFlip(tEdge e);
+
+		// Split the given edge(input) into two. 
+		//	  return :  newly created vertex or NULL(when the split fails);
+		tVertex			EdgeSplit(tEdge e);
+
+		tVertex			faceSplit(tFace f, double bary[3]);
+
+		/*
+			aux :  represent the linking status of the current solid
+				=0  --> nothing has been created, the only thing we have is vertex, edges, faces lists
+				=1  --> aux traits has been created, from each vertex we can track all halfedges around it
+				=2  --> aux traits has been removed, but the half-edge structure has been created
+		*/
+		int aux;
+		void setupAux();
+		void resetAux();
+		void removeAux();
+
+		tHalfEdge vertexMostClwOutHalfEdge( tVertex  v );
+		tHalfEdge vertexNextCcwOutHalfEdge( tHalfEdge  he );
+		tHalfEdge vertexMostCcwOutHalfEdge( tVertex  v );
+		tHalfEdge vertexNextClwOutHalfEdge( tHalfEdge  he );
+		tHalfEdge vertexMostClwInHalfEdge( tVertex  v );
+		tHalfEdge vertexNextCcwInHalfEdge( tHalfEdge  he );
+		tHalfEdge vertexMostCcwInHalfEdge( tVertex  v );
+		tHalfEdge vertexNextClwInHalfEdge( tHalfEdge  he );
+		tHalfEdge faceMostClwHalfEdge( tFace  f );
+		tHalfEdge faceMostCcwHalfEdge( tFace  f );
+		tHalfEdge faceNextCcwHalfEdge( tHalfEdge  he );
+		tHalfEdge faceNextClwHalfEdge( tHalfEdge  he );		
+
+	public:
+		int maxid;
+		int maxfid;
+		Attributes<Point> normals;
+		Attributes<Point> uv;
+		int sid(int vid);
+		int sid2vid(int sid);
+		Vertex * sidVertex(int sid);
+
+		stdext::hash_map<int, int>		id2VInd;
+		stdext::hash_map<int, int>		id2FInd;
+		//std::map<int, int>			id2VInd;		
+		//std::map<int, int>			id2FInd;		
+
+	protected:
+		std::vector<Edge *>				m_edges;
+		std::vector<Vertex *>			m_verts;	
+		std::vector<Face *>				m_faces;		
+		
+		
+	protected:
+		friend class MeshVertexIterator;
+		friend class MeshEdgeIterator;
+		friend class MeshFaceIterator;
+		friend class MeshHalfEdgeIterator;
+		friend class MeshDelegate;
+
+
+		tVertex createVertex(int id);
+		tEdge createEdge(tVertex start, tVertex end);
+		tFace createFace(int id);
+		tFace createFace(int v[], int id);
+		tFace createFace(Vertex * v[], int id);
+	};
+
+}//name space XMeshLib
+
+#endif //_XMESHLIB_CORE_SOLID_H_ defined

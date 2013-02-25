@@ -1,49 +1,58 @@
-#ifndef _HALFEDGE_H_
-#define _HALFEDGE_H_
+#ifndef _XMESHLIB_CORE_HALFEDGE_H_
+#define _XMESHLIB_CORE_HALFEDGE_H_
 
 #include "Edge.h"
+#include "Trait.h"
+#include <assert.h>
 
-class Vertex;
-class Face;
-
-class Halfedge
+namespace XMeshLib
 {
-public:
-	Halfedge(){ m_edge = NULL; m_vertex = NULL; m_prev = NULL; m_next = NULL; m_face = NULL;}
-	~Halfedge()	{;}
+	class Vertex;
+	class Edge;
+	class Face;
+	class TraitList;
 
-	//Referenced elements
-	Face     * & face()    { return m_face;}
-	Edge     * & edge()    { return m_edge;}
-	Vertex   * & target()  { return m_vertex;}	
-	Halfedge * & prev() { return m_prev;}
-	Halfedge * & next() { return m_next;}
+	class HalfEdge
+	{
+	public:
+		HalfEdge(){ m_edge = NULL; m_vertex = NULL; m_prev = NULL; m_next = NULL; m_face = NULL; m_traits = NULL;}
+		~HalfEdge()
+		{
+			if (m_traits)
+			{
+				m_traits->clear();
+				delete m_traits;
+			}
+		}
+		Edge     * & edge()    { return m_edge;   }
+		Vertex   * & vertex()  { return m_vertex; }
+		Vertex   * & target()  { return m_vertex; }
+		Vertex   * & source()  { return m_prev->vertex();}
+		HalfEdge * & he_prev() { return m_prev;}
+		HalfEdge * & he_next() { return m_next;}
+		HalfEdge * & he_sym()  { return m_edge->other(this); }
+		Face     * & face()    { return m_face;}
+		TraitList * & traits()  { return m_traits;}
+		std::string & string() { return m_string; }
+		HalfEdge * ccw_rotate_about_target();
+		HalfEdge * clw_rotate_about_target();
+		HalfEdge * ccw_rotate_about_source();
+		HalfEdge * clw_rotate_about_source();
+		void AddTrait(TraitNode * t);
+		TraitNode * GetTrait(int tind);
+		bool DelTrait(int tind);
 
-	//Derived by halfedge data structure
-	Halfedge * & twin()  { return m_edge->twin(this); }
-	Vertex   * & source()  { return m_prev->target();}
-
-	//Rotation operations
-	Halfedge * clw_rotate_about_target() {return next()->twin();}
-	Halfedge * ccw_rotate_about_source() {return prev()->twin();}
-	Halfedge * clw_rotate_about_source() {
-		Halfedge * he = twin();
-		if (he) return he->next();
-		else return NULL;
-	}
-	Halfedge * ccw_rotate_about_target() {
-		Halfedge * he_dual = twin();
-		if (he_dual) return he_dual->prev();
-		else return NULL;
-	}
+	private:
+		Edge     *     m_edge;
+		Face     *     m_face;
+		Vertex   *     m_vertex;		//target vertex
+		HalfEdge *	   m_prev;
+		HalfEdge *     m_next;
+		std::string    m_string;
+		TraitList *	   m_traits;
+	};
 
 
-protected:
-	Edge     *     m_edge;
-    Face     *     m_face;
-	Vertex   *     m_vertex;		//target vertex
-	Halfedge *	   m_prev;
-	Halfedge *     m_next;
-};
+}//name space XMeshLib
 
-#endif 
+#endif //_XMESHLIB_CORE_HALFEDGE_H_ defined

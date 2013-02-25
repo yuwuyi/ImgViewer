@@ -1,26 +1,52 @@
-#ifndef _FACE_H_
-#define _FACE_H_
+#ifndef _XMESHLIB_CORE_FACE_H_
+#define _XMESHLIB_CORE_FACE_H_
 
-class Halfedge;
+#include "Trait.h"
+#include <assert.h>
 
-class Face
+namespace XMeshLib
 {
-public:
-	Face(){ m_halfedge = NULL;}
-	~Face(){;}
-	Halfedge    * & he() { return m_halfedge; }
-	int		      & id() { return m_id; }
+	class HalfEdge;
+	class TraitList;
+	class Face
+	{
+	public:
+		Face(){ m_halfedge = NULL; m_traits=NULL; m_sharp = false;}
+		~Face()
+		{
+			if (m_traits)
+			{
+				m_traits->clear();
+				delete m_traits;			
+			}
+		}
+		HalfEdge    * & halfedge() { return m_halfedge; };
+		TraitList	* & traits()    { return m_traits;};
+		int		      & id()       { return m_id; };
+		const int       id() const { return m_id; };
+		std::string &   string()   { return m_string;};
+		bool & sharp() {return m_sharp;}
+		bool operator== (const Face & f) const
+		{
+			return m_id == f.id();
+		};
+		bool operator< (const Face & f) const
+		{
+			return f.id() >= m_id; 
+		};
 
-	std::string & PropertyStr() { return m_propertyStr;}
+		void AddTrait(TraitNode * t);
+		TraitNode * GetTrait(int tind);
+		bool DelTrait(int tind);
 
-protected:
-	//for half-edge data structure	
-	Halfedge	*	m_halfedge;
-	
-	//optional
-	int				m_id;
-	std::string		m_propertyStr;
-};
+	private:
+		int			  m_id;
+		HalfEdge    * m_halfedge;
+		std::string   m_string;   //string
+		bool m_sharp;
+		TraitList   * m_traits;
+	};
 
+}//name space XMeshLib
 
-#endif
+#endif //_XMESHLIB_CORE_FACE_H_ defined
