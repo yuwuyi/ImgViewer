@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ImgViewerClass</class>
+ <widget class="QMainWindow" name="ImgViewerClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>ImgViewer</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="ViewPort" name="widget" native="true"/>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Tab 1</string>
+       </attribute>
+       <widget class="QComboBox" name="comboBox">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>140</y>
+          <width>69</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="currentIndex">
+         <number>2</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>X</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Y</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Z</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QSlider" name="horizontalSlider">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>210</y>
+          <width>91</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="maximum">
+         <number>512</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>50</y>
+          <width>111</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="accessibleName">
+         <string/>
+        </property>
+        <property name="text">
+         <string>Show All Mesh</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="indicator">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>240</y>
+          <width>54</width>
+          <height>12</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="snapshot">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>90</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>SnapShot!</string>
+        </property>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Tab 2</string>
+       </attribute>
+       <widget class="QPushButton" name="blackColor">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>50</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Black</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="whiteButton">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>130</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>White</string>
+        </property>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>600</width>
+     <height>19</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionLoad_Images"/>
+    <addaction name="actionLoad_Mesh"/>
+   </widget>
+   <addaction name="menuFile"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionLoad_Images">
+   <property name="text">
+    <string>Load Images</string>
+   </property>
+  </action>
+  <action name="actionLoad_Contour">
+   <property name="text">
+    <string>Load Contour</string>
+   </property>
+  </action>
+  <action name="actionLoad_Mesh">
+   <property name="text">
+    <string>Load Mesh</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>ViewPort</class>
+   <extends>QWidget</extends>
+   <header>viewport.h</header>
+   <container>1</container>
+   <slots>
+    <slot>sliceDir(int)</slot>
+    <slot>slice(int)</slot>
+    <slot>adjustContour(int)</slot>
+    <slot>snapshot()</slot>
+    <slot>whitecolor()</slot>
+    <slot>blackcolor()</slot>
+   </slots>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="imgviewer.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>actionLoad_Images</sender>
+   <signal>activated()</signal>
+   <receiver>ImgViewerClass</receiver>
+   <slot>loadImages()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>comboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>widget</receiver>
+   <slot>sliceDir(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>520</x>
+     <y>141</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionLoad_Contour</sender>
+   <signal>activated()</signal>
+   <receiver>ImgViewerClass</receiver>
+   <slot>loadCM()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>widget</receiver>
+   <slot>adjustContour(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>531</x>
+     <y>120</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>comboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>ImgViewerClass</receiver>
+   <slot>sliceDir(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>520</x>
+     <y>211</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>horizontalSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>ImgViewerClass</receiver>
+   <slot>slice(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>521</x>
+     <y>281</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionLoad_Mesh</sender>
+   <signal>activated()</signal>
+   <receiver>ImgViewerClass</receiver>
+   <slot>LoadMesh()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>299</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>snapshot</sender>
+   <signal>clicked()</signal>
+   <receiver>widget</receiver>
+   <slot>snapshot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>523</x>
+     <y>162</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>horizontalSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>widget</receiver>
+   <slot>slice(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>521</x>
+     <y>281</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>blackColor</sender>
+   <signal>clicked()</signal>
+   <receiver>widget</receiver>
+   <slot>blackcolor()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>523</x>
+     <y>122</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>whiteButton</sender>
+   <signal>clicked()</signal>
+   <receiver>widget</receiver>
+   <slot>whitecolor()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>523</x>
+     <y>202</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>233</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>loadImages()</slot>
+  <slot>loadCM()</slot>
+  <slot>sliceDir(int)</slot>
+  <slot>slice(int)</slot>
+  <slot>LoadMesh()</slot>
+ </slots>
+</ui>
